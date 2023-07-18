@@ -35,6 +35,7 @@ def load_game(username: str) -> list:
             table_row = row.split(",")
             table_row.pop(-1)
             updated_table.append(table_row)
+        updated_table = str_to_integer(updated_table)
         data_game.append(updated_table)
     print("\nGame Loaded Successfully.\n")
 
@@ -85,3 +86,21 @@ def print_score_table(scores: list) -> None:
         username, points = score
         print(f"{index:2d}. {username:<12} | {points}")
     print("---------------------")
+
+
+def str_to_integer(list_of_lists: list) -> list:
+    '''
+    This function receives a list of lists and transforms
+    all digits in string format to integers. Returns the 
+    list of modified lists
+    '''
+    new_list = []
+    for sublist in list_of_lists:
+        new_sublist = []
+        for element in sublist:
+            if element.isdigit():
+                new_sublist.append(int(element))
+            else:
+                new_sublist.append(element)
+        new_list.append(new_sublist)
+    return new_list

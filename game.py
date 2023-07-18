@@ -73,7 +73,8 @@ class Game:
                             response = self.discover_sector(menu, visible_table, invisible_table)
                             if response['Is Alive']:
                                 if response['Status'] == "Sector discovered":
-                                    discovered_cells += 1
+                                    visible_table = response['Visible Table']
+                                    discovered_cells = self.count_discovered_cells(visible_table)
                                     self.score = num_beasts * discovered_cells * POND_SCORE
                             else:
                                 save_game_over(self.username, self.score)
@@ -82,7 +83,8 @@ class Game:
                             save_game(self.username, [visible_table, invisible_table])
                     if cells_to_discover == discovered_cells:
                         self.print_winner(invisible_table)
-                        save_game_over(self.username, self.score)  
+                        save_game_over(self.username, self.score)
+                        menu.type = "Initial"
             elif command['Command'] == "Open Score Ranking":
                 scores_ranking = load_scores()
                 print_score_table(scores_ranking)
@@ -118,7 +120,8 @@ class Game:
                 return {'Is Alive': False}
             else:
                 visible_table[selected_row][selected_column] = invisible_table[selected_row][selected_column]
-                return {'Is Alive': True, 'Status': "Sector discovered"}
+                visible_table = self.discover_safe_sectors(visible_table, invisible_table, selected_row, selected_column)
+                return {'Is Alive': True, 'Status': "Sector discovered", 'Visible Table': visible_table}
         else:
             return {'Is Alive': True, 'Status': "Already discovered"}
 
@@ -172,7 +175,7 @@ class Game:
         print(' ' * 4 + '└' + '─' * (2 * m + 1) + '┘')
 
 
-    def check_discovered_sector(self, visible_table: list, invisible_table: list, selected_row: int, selected_column: str) -> bool:
+    def check_discovered_sector(self, visible_table: list, invisible_table: list, selected_row: int, selected_column: int) -> bool:
         '''
         This method checks whether the selected cell has already been discovered or not.
         If it was already discovered, it returns True, and if not, it returns False.
@@ -184,3 +187,19 @@ class Game:
             return False
 
 
+    def discover_safe_sectors(self, visible_table: list, invisible_table: list, selected_row: int, selected_column: int) -> list:
+        '''
+        This method automatically discovers all safe cells (those around a 0). Returns the visible table.
+        '''
+        num_rows = len(visible_table)
+        num_columns = len(visible_table[0])
+        if invisible_table[selected_row][selected_column] == 0:
+            for row in range(max(0, selected_row - 1), min(num_rows - 1, selected_row + 1) + 1): # We check the cell above and the cell below, without leaving the board.
+                for column in range(max(0, selected_column - 1), min(num_columns - 1, selected_column + 1) + 1): # We check the cell on the right and the cell on the left, without leaving the board.
+                    if invisible_table[row][column] == 0:
+                        invisible_table[selected_row][selected_column] = "0"
+                        visible_table = self.discover_safe_sectors(visible_table, invisible_table, row, column)
+                        visible_table[row][column] = "0"
+                    else:
+                        visible_table[row][column] = invisible_table[row][column]
+        return visible_table
